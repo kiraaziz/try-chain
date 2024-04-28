@@ -24,13 +24,14 @@ const FullApp = async (topic) => {
 
         const { content } = videoData.scenes[i]
 
-        await useMakeImage(content, `${id}/${i}.jpg`)
+        // await useMakeImage(content, `${id}/${i}.jpg`)
         await useMakeSpeech(content, `${id}/${i}.mp3`)
 
         console.log(`scene  Number ${i} : created `)
     }
 
     let schema = {
+        id: id,
         header: {
             text: videoData.title,
             background: "",
@@ -66,18 +67,20 @@ const FullApp = async (topic) => {
                 endAt: before + duration,
             }
 
-            const buffer = fs.readFileSync(path.join(id + "/" + i + ".jpg"))
+            // const buffer = fs.readFileSync(path.join(id + "/" + i + ".jpg"))
 
 
-            getColors(buffer, 'image/jpg').then(colors => {
-                obj.colors = colors.map(color => color.hex())
-            })
+            // getColors(buffer, 'image/jpg').then(colors => {
+            //     obj.colors = colors.map(color => color.hex())
+            // })
 
             schema.body.push(obj)
         })
     }
 
     fs.writeFileSync(id + "/data.json", `${JSON.stringify(schema, null, 2)}`)
+    fs.writeFileSync("range/src/data.js", `export const json = ${JSON.stringify(schema, null, 2)}`)
+
 }
 
-FullApp("7 really mind blowing facts in diffrent area and in diffrent structure")
+FullApp("5 wierd fact about north korea no one want you to know about")
