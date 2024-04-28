@@ -1,45 +1,83 @@
-import { z } from "zod";
-import { HuggingFaceInference } from "@langchain/community/llms/hf"
-import { StructuredOutputParser } from "langchain/output_parsers"
-import { RunnableSequence } from "@langchain/core/runnables";
-import { PromptTemplate } from "@langchain/core/prompts";
+import { useMakeGif, useMakeImage, useMakeScript, useMakeSpeech, useMakeSpeech2 } from "./hooks.js";
+import { mkdirSync } from "fs"
+import slugify from "slugify";
+import { getAudioDurationInSeconds } from "get-audio-duration"
+import fs from "fs"
+import getColors from 'get-image-colors'
+import path from "path";
 
-const HF_API_KEY = ""
 
-const GeneratedAi = async (parser, template) => {
+const FullApp = async (topic) => {
 
-    const model = new HuggingFaceInference({
-        model: "mistralai/Mistral-7B-Instruct-v0.2",
-        apiKey: HF_API_KEY,
-        maxTokens: 10000
+    const id = "source/" + slugify(topic) + "-" + Date.now()
+    mkdirSync(id)
+
+    const videoData = await useMakeScript({
+        topic: topic,
     })
 
+    console.log(await videoData)
 
-    const chain = RunnableSequence.from([
-        PromptTemplate.fromTemplate(
-            "Answer the users question as best as possible.\n{format_instructions}\n {question} ? "
-        ),
-        model,
-        parser,
-    ])
+    await useMakeSpeech(videoData.title, `${id}/title.mp3`)
 
-    const result = await chain.invoke({
-        question: template,
-        format_instructions: parser.getFormatInstructions()
-    });
+    for (let i = 0; i < videoData.scenes.length; i++) {
 
-    return result
-}
+        const { content } = videoData.scenes[i]
+
+        await useMakeImage(content, `${id}/${i}.jpg`)
+        await useMakeSpeech(content, `${id}/${i}.mp3`)
+
+        console.log(`scene  Number ${i} : created `)
+    }
+
+    let schema = {
+        header: {
+            text: videoData.title,
+            background: "",
+            audioPath: 0,
+            startAtEndAt: 0,
+            endAt: 0,
+            duration: 0
+        },
+        body: []
+    }
+
+    await getAudioDurationInSeconds(id + "/title.mp3").then((duration) => {
+        schema.header.duration = duration
+        schema.header.endAt = duration
+        schema.header.audioPath = id + "/title.mp3"
+
+    })
+
+    for (let i = 0; i < videoData.scenes.length; i++) {
+        await getAudioDurationInSeconds(id + "/" + i + ".mp3").then((duration) => {
+
+            let before = schema.header.duration
+            for (let j = 0; j < schema.body.length; j++) {
+                before = before + schema.body[j].duration
+            }
+
+            const obj = {
+                content: videoData.scenes[i].content,
+                image: id + "/" + i + ".jpg",
+                colors: [],
+                duration: duration,
+                startAt: before,
+                endAt: before + duration,
+            }
+
+            const buffer = fs.readFileSync(path.join(id + "/" + i + ".jpg"))
 
 
-try {
-    console.log(await GeneratedAi(StructuredOutputParser.fromZodSchema(
-        z.array(z.object({
-            name: z.string().describe("name of the simular city ."),
+            getColors(buffer, 'image/jpg').then(colors => {
+                obj.colors = colors.map(color => color.hex())
+            })
+
+            schema.body.push(obj)
         })
-        ).length(4)
-    ), `Give me a simular city of Rome ! `))
+    }
 
-} catch (e) {
-    console.log(e)
+    fs.writeFileSync(id + "/data.json", `${JSON.stringify(schema, null, 2)}`)
 }
+
+FullApp("7 really mind blowing facts in diffrent area and in diffrent structure")

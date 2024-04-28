@@ -6,10 +6,16 @@
   "dependencies": {
     "@huggingface/inference": "^2.6.6",
     "@langchain/community": "^0.0.44",
+    "@marsron/google-image": "^1.0.4",
     "@xenova/transformers": "^2.16.1",
+    "async-g-i-s": "^1.5.2",
+    "g-i-s": "^2.1.7",
+    "get-audio-duration": "^4.0.1",
+    "get-image-colors": "^4.0.1",
     "langchain": "^0.1.31",
     "nanospinner": "^1.1.0",
     "nodemon": "^3.1.0",
+    "slugify": "^1.6.6",
     "zod": "^3.22.4"
   }
 }
